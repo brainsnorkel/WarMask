@@ -62,11 +62,9 @@ local iconTexture = nil
 local statusLabel = nil
 local countdownLabel = nil  -- Label on icon for countdown timer
 
--- Flash state
+-- Pulse state
 local isInCombat = false
-local flashVisible = true
-local countdownFlashVisible = true
-local countdownFlashActive = false  -- Track if countdown flash is already running
+local countdownFlashActive = false  -- Track if countdown pulse is already running
 
 -- =============================================================================
 -- DEBUG
@@ -329,14 +327,28 @@ local function UpdateCountdownOnIcon(time, r, g, b)
 end
 
 -- =============================================================================
--- READY TEXT FLASH
+-- COLOR INTERPOLATION HELPER
 -- =============================================================================
-local function UpdateReadyFlash()
-    -- Only flash when: in combat, warmask equipped, not in countdown
+local function LerpColor(colorA, colorB, t)
+    -- t ranges from 0 to 1, returns interpolated color
+    return {
+        colorA[1] + (colorB[1] - colorA[1]) * t,
+        colorA[2] + (colorB[2] - colorA[2]) * t,
+        colorA[3] + (colorB[3] - colorA[3]) * t,
+        colorA[4] + (colorB[4] - colorA[4]) * t
+    }
+end
+
+-- =============================================================================
+-- READY TEXT PULSE
+-- =============================================================================
+local readyPulseStartTime = 0
+
+local function UpdateReadyPulse()
+    -- Only pulse when: in combat, warmask equipped, not in countdown
     if not isInCombat or not hasWarmaskBuff or isCountdownActive then
-        -- Stop flashing, set to ready color
+        -- Stop pulsing, set to ready color
         EM:UnregisterForUpdate(WM.name .. "ReadyFlash")
-        flashVisible = true
         if statusLabel then
             local readyColor = savedVars.readyColor or {0, 1, 0, 1}
             statusLabel:SetColor(readyColor[1], readyColor[2], readyColor[3], 1)
@@ -344,15 +356,19 @@ local function UpdateReadyFlash()
         return
     end
     
-    -- Toggle between ready and cooldown colors
-    flashVisible = not flashVisible
+    -- Calculate pulse position (0 to 1 to 0 over 1 second cycle)
+    local elapsed = GetGameTimeSeconds() - readyPulseStartTime
+    local cycleTime = 1.0  -- 1 second for full cycle (0.5s each direction)
+    local t = (elapsed % cycleTime) / cycleTime  -- 0 to 1
+    -- Convert to ping-pong (0 to 1 to 0)
+    local pulseT = t < 0.5 and (t * 2) or (2 - t * 2)
+    
+    -- Interpolate between ready and cooldown colors
+    local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+    local cooldownColor = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
+    local color = LerpColor(readyColor, cooldownColor, pulseT)
+    
     if statusLabel then
-        local color
-        if flashVisible then
-            color = savedVars.readyColor or {0, 1, 0, 1}
-        else
-            color = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
-        end
         statusLabel:SetColor(color[1], color[2], color[3], 1)
     end
 end
@@ -360,15 +376,14 @@ end
 local function StartReadyFlash()
     -- Only start if conditions are met
     if isInCombat and hasWarmaskBuff and not isCountdownActive then
-        flashVisible = true
+        readyPulseStartTime = GetGameTimeSeconds()
         EM:UnregisterForUpdate(WM.name .. "ReadyFlash")
-        EM:RegisterForUpdate(WM.name .. "ReadyFlash", 500, UpdateReadyFlash)
+        EM:RegisterForUpdate(WM.name .. "ReadyFlash", 50, UpdateReadyPulse)
     end
 end
 
 local function StopReadyFlash()
     EM:UnregisterForUpdate(WM.name .. "ReadyFlash")
-    flashVisible = true
     if statusLabel then
         local readyColor = savedVars.readyColor or {0, 1, 0, 1}
         statusLabel:SetColor(readyColor[1], readyColor[2], readyColor[3], 1)
@@ -376,35 +391,44 @@ local function StopReadyFlash()
 end
 
 -- =============================================================================
--- COUNTDOWN FLASH (below 10s) - flashes target name
+-- COUNTDOWN PULSE (below 10s) - pulses target name
 -- =============================================================================
-local function UpdateCountdownFlash()
+local countdownPulseStartTime = 0
+
+local function UpdateCountdownPulse()
     if not isCountdownActive then
         EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
         countdownFlashActive = false
-        countdownFlashVisible = true
         return
     end
     
     local remaining = countdownEndTime - GetGameTimeSeconds()
     
-    -- Only flash when below 10 seconds
+    -- Only pulse when below 10 seconds
     if remaining >= 10 or remaining <= 0 then
         EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
         countdownFlashActive = false
-        countdownFlashVisible = true
+        -- Reset to ready color
+        if statusLabel then
+            local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+            statusLabel:SetColor(readyColor[1], readyColor[2], readyColor[3], 1)
+        end
         return
     end
     
-    -- Toggle between ready and cooldown colors for target name
-    countdownFlashVisible = not countdownFlashVisible
+    -- Calculate pulse position (0 to 1 to 0 over 1 second cycle)
+    local elapsed = GetGameTimeSeconds() - countdownPulseStartTime
+    local cycleTime = 1.0  -- 1 second for full cycle (0.5s each direction)
+    local t = (elapsed % cycleTime) / cycleTime  -- 0 to 1
+    -- Convert to ping-pong (0 to 1 to 0)
+    local pulseT = t < 0.5 and (t * 2) or (2 - t * 2)
+    
+    -- Interpolate between ready and cooldown colors
+    local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+    local cooldownColor = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
+    local color = LerpColor(readyColor, cooldownColor, pulseT)
+    
     if statusLabel then
-        local color
-        if countdownFlashVisible then
-            color = savedVars.readyColor or {0, 1, 0, 1}
-        else
-            color = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
-        end
         statusLabel:SetColor(color[1], color[2], color[3], 1)
     end
 end
@@ -414,15 +438,14 @@ local function StartCountdownFlash()
     if countdownFlashActive then return end
     
     countdownFlashActive = true
-    countdownFlashVisible = true
+    countdownPulseStartTime = GetGameTimeSeconds()
     EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
-    EM:RegisterForUpdate(WM.name .. "CountdownFlash", 500, UpdateCountdownFlash)
+    EM:RegisterForUpdate(WM.name .. "CountdownFlash", 50, UpdateCountdownPulse)
 end
 
 local function StopCountdownFlash()
     EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
     countdownFlashActive = false
-    countdownFlashVisible = true
     -- Reset to ready color
     if statusLabel and isCountdownActive then
         local readyColor = savedVars.readyColor or {0, 1, 0, 1}
