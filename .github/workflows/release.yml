@@ -1,0 +1,52 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Create addon zip
+        run: |
+          # Create a temporary directory with the addon name
+          mkdir -p WarMask
+          
+          # Copy addon files (exclude git, github, and other non-addon files)
+          cp WarMask.txt WarMask/
+          cp WarMask.lua WarMask/
+          cp Line.lua WarMask/
+          cp Settings.lua WarMask/
+          cp README.md WarMask/
+          
+          # Create the zip file
+          zip -r WarMask-${{ steps.version.outputs.VERSION }}.zip WarMask
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: WarMask v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## WarMask v${{ steps.version.outputs.VERSION }}
+            
+            ### Installation
+            1. Download `WarMask-${{ steps.version.outputs.VERSION }}.zip`
+            2. Extract to your ESO AddOns folder: `Documents/Elder Scrolls Online/live/AddOns/`
+            3. Ensure LibAddonMenu-2.0 is installed
+            4. Enable the addon in-game
+          files: WarMask-${{ steps.version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: false
+
