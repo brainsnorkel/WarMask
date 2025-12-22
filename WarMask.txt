@@ -1,7 +1,7 @@
 ## Title: Warmask
 ## APIVersion: 101048
 ## Author: @brainsnorkel
-## Version: 1.0.0
+## Version: 1.1.0
 ## SavedVariables: WarMaskSV
 ## DependsOn: LibAddonMenu-2.0>=41
 ## Description: Tracks Mark of Hircine from Huntsman's Warmask. Shows icon when buff is active, countdown when bash is applied to target.

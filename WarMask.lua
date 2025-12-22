@@ -17,7 +17,7 @@ WarMask = WarMask or {}
 local WM = WarMask
 
 WM.name = "WarMask"  -- Must match folder name for addon loading
-WM.version = "1.0.0"
+WM.version = "1.1.0"
 
 -- =============================================================================
 -- CONSTANTS
