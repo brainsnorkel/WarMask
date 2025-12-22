@@ -104,10 +104,10 @@ function WM.BuildMenu()
         {
             type = "slider",
             name = "Font Scale",
-            tooltip = "Adjust the size of the text and countdown timer. Range: 50% to 200%.",
+            tooltip = "Adjust the size of the text and countdown timer. Range: 50% to 400%.",
             min = 50,
-            max = 200,
-            step = 5,
+            max = 400,
+            step = 10,
             getFunc = function() return WM.savedVars.fontScale or 100 end,
             setFunc = function(value)
                 WM.savedVars.fontScale = value

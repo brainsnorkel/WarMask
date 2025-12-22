@@ -225,20 +225,23 @@ function WM.ApplyUIScaling()
         iconTexture:SetDimensions(iconSize, iconSize)
     end
     
-    -- Calculate font level from font scale
-    -- ZoFontWinH1 is largest, ZoFontWinH4 is smallest
-    -- Higher scale = lower font level number = bigger font
-    local fontLevel
-    if fontScale >= 1.5 then
-        fontLevel = 1
+    -- Calculate font from font scale
+    -- Available fonts from smallest to largest:
+    -- ZoFontWinH4 < ZoFontWinH3 < ZoFontWinH2 < ZoFontWinH1 < ZoFontHeader < ZoFontCallout
+    local fontName
+    if fontScale >= 3.0 then
+        fontName = "ZoFontCallout"      -- 300%+ (largest)
+    elseif fontScale >= 2.0 then
+        fontName = "ZoFontHeader"       -- 200-299%
+    elseif fontScale >= 1.5 then
+        fontName = "ZoFontWinH1"        -- 150-199%
     elseif fontScale >= 1.0 then
-        fontLevel = 2
+        fontName = "ZoFontWinH2"        -- 100-149%
     elseif fontScale >= 0.7 then
-        fontLevel = 3
+        fontName = "ZoFontWinH3"        -- 70-99%
     else
-        fontLevel = 4
+        fontName = "ZoFontWinH4"        -- Below 70% (smallest)
     end
-    local fontName = string.format("ZoFontWinH%d", fontLevel)
     
     -- Update countdown label font size
     if countdownLabel then
