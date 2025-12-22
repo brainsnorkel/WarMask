@@ -48,6 +48,7 @@ WM.defaults = {
     enableDebug = false,  -- Debug information flag
     iconScale = 100,  -- Icon scale percentage (100 = 100%)
     fontScale = 100,  -- Font scale percentage (100 = 100%)
+    fontFamily = "Univers67",  -- Font family: "Univers67" or "ProseAntiquePSMT"
 }
 
 -- =============================================================================
@@ -80,6 +81,18 @@ local function Debug(msg)
             d("[Warmask] " .. msg)
         end
     end
+end
+
+-- =============================================================================
+-- FONT HELPER
+-- =============================================================================
+-- Get font string based on font family and size
+local function GetFontString(fontSize, fontFamily)
+    if not fontFamily then
+        fontFamily = (savedVars and savedVars.fontFamily) or "Univers67"
+    end
+    local fontPath = string.format("esoui/common/fonts/%s.slug|%d|soft-shadow-thick", fontFamily, fontSize)
+    return fontPath
 end
 
 -- =============================================================================
@@ -189,7 +202,8 @@ local function CreateUI()
     
     -- Countdown label on icon
     countdownLabel = WM_WINDOW:CreateControl(WM.name .. "CountdownLabel", iconTexture, CT_LABEL)
-    countdownLabel:SetFont("esoui/common/fonts/Univers67.slug|54|soft-shadow-thick")
+    local defaultFont = savedVars and savedVars.fontFamily or "Univers67"
+    countdownLabel:SetFont(GetFontString(54, defaultFont))
     countdownLabel:SetAnchor(CENTER, iconTexture, CENTER, 0, 0)
     countdownLabel:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
     countdownLabel:SetVerticalAlignment(TEXT_ALIGN_CENTER)
@@ -199,7 +213,7 @@ local function CreateUI()
     
     -- Status text label (for unit name or status)
     statusLabel = WM_WINDOW:CreateControl(WM.name .. "Label", mainWindow, CT_LABEL)
-    statusLabel:SetFont("esoui/common/fonts/Univers67.slug|54|soft-shadow-thick")
+    statusLabel:SetFont(GetFontString(54, defaultFont))
     statusLabel:SetAnchor(LEFT, iconTexture, RIGHT, 8, 0)
     statusLabel:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     statusLabel:SetVerticalAlignment(TEXT_ALIGN_CENTER)
@@ -221,6 +235,7 @@ function WM.ApplyUIScaling()
     -- Ensure scale values exist
     if not savedVars.iconScale then savedVars.iconScale = 100 end
     if not savedVars.fontScale then savedVars.fontScale = 100 end
+    if not savedVars.fontFamily then savedVars.fontFamily = "Univers67" end
     
     local iconScale = savedVars.iconScale / 100
     local fontScale = savedVars.fontScale / 100
@@ -237,27 +252,27 @@ function WM.ApplyUIScaling()
     -- Calculate font from font scale
     local fontSize
     if fontScale >= 3.0 then
-        fontSize = "54"      -- 300%+ (largest)
+        fontSize = 54      -- 300%+ (largest)
     elseif fontScale >= 2.0 then
-        fontSize = "48"       -- 200-299%
+        fontSize = 48       -- 200-299%
     elseif fontScale >= 1.5 then
-        fontSize = "42"        -- 150-199%
+        fontSize = 42        -- 150-199%
     elseif fontScale >= 1.0 then
-        fontSize = "36"        -- 100-149%
+        fontSize = 36        -- 100-149%
     elseif fontScale >= 0.7 then
-        fontSize = "30"        -- 70-99%
+        fontSize = 30        -- 70-99%
     else
-        fontSize = "24"        -- Below 70% (smallest)
+        fontSize = 24        -- Below 70% (smallest)
     end
     
-    -- Update countdown label font size
+    -- Update countdown label font
     if countdownLabel then
-        countdownLabel:SetFont(string.format("esoui/common/fonts/Univers67.slug|%d|soft-shadow-thick", fontSize * 2))
+        countdownLabel:SetFont(GetFontString(fontSize * 2, savedVars.fontFamily))
     end
     
-    -- Update status label font size
+    -- Update status label font
     if statusLabel then
-        statusLabel:SetFont(string.format("esoui/common/fonts/Univers67.slug|%d|soft-shadow-thick", fontSize * 2))
+        statusLabel:SetFont(GetFontString(fontSize * 2, savedVars.fontFamily))
     end
     
     -- Update main window size to accommodate scaled icon

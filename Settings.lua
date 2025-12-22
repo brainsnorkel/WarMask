@@ -120,6 +120,36 @@ function WM.BuildMenu()
             end,
             width = "full",
         },
+        {
+            type = "dropdown",
+            name = "Font Family",
+            tooltip = "Select the font family to use for the addon text.",
+            choices = {"Univers67", "ProseAntiquePSMT"},
+            choicesValues = {"Univers67", "ProseAntiquePSMT"},
+            getFunc = function() return WM.savedVars.fontFamily or "Univers67" end,
+            setFunc = function(value)
+                WM.savedVars.fontFamily = value
+                WM.ApplyUIScaling()
+                -- Refresh font preview
+                zo_callLater(function()
+                    if WM.CreateFontPreview then
+                        WM.CreateFontPreview()
+                    end
+                end, 100)
+                d("[Warmask] Font family set to " .. value)
+            end,
+            width = "full",
+        },
+        {
+            type = "description",
+            text = "|cFFFFFFFont Preview:|r",
+            width = "full",
+        },
+        {
+            type = "custom",
+            reference = "WM_FontPreviewContainer",
+            width = "full",
+        },
         
         -- Divider
         {
@@ -188,6 +218,87 @@ function WM.BuildMenu()
     }
     
     LAM:RegisterOptionControls(WM.name .. "Menu", options)
+    
+    -- Create font preview after menu is built
+    zo_callLater(function()
+        WM.CreateFontPreview()
+    end, 500)
+end
+
+-- =============================================================================
+-- FONT PREVIEW
+-- =============================================================================
+function WM.CreateFontPreview()
+    -- Find the settings panel
+    local settingsWindow = WINDOW_MANAGER:GetControlByName("LAMAddonSettings")
+    if not settingsWindow then return end
+    
+    -- Search for the custom control in the current panel
+    local container = nil
+    local function SearchChildren(parent, depth)
+        if depth > 10 then return nil end  -- Prevent infinite recursion
+        if not parent then return nil end
+        
+        local numChildren = parent:GetNumChildren()
+        for i = 1, numChildren do
+            local child = parent:GetChild(i)
+            if child then
+                local name = child:GetName()
+                if name and (string.find(name, "FontPreview") or string.find(name, "WM_FontPreview")) then
+                    return child
+                end
+                -- Recursively search children
+                local found = SearchChildren(child, depth + 1)
+                if found then return found end
+            end
+        end
+        return nil
+    end
+    
+    container = SearchChildren(settingsWindow, 0)
+    
+    if not container then return end
+    
+    -- Clear any existing previews
+    container:RemoveAllChildren()
+    
+    -- Create preview labels
+    local previewText = "Bash something"
+    
+    -- Label for "Univers67:"
+    local univHeader = WINDOW_MANAGER:CreateControl(nil, container, CT_LABEL)
+    univHeader:SetFont("ZoFontGame")
+    univHeader:SetAnchor(TOPLEFT, container, TOPLEFT, 10, 5)
+    univHeader:SetText("|cFFFFFFUnivers67:|r")
+    univHeader:SetColor(1, 1, 1, 1)
+    univHeader:SetDimensions(200, 25)
+    
+    -- Univers67 preview
+    local univLabel = WINDOW_MANAGER:CreateControl(nil, container, CT_LABEL)
+    univLabel:SetFont("esoui/common/fonts/Univers67.slug|32|soft-shadow-thick")
+    univLabel:SetAnchor(TOPLEFT, container, TOPLEFT, 10, 30)
+    univLabel:SetText(previewText)
+    univLabel:SetColor(1, 1, 1, 1)
+    univLabel:SetDimensions(container:GetWidth() - 20, 30)
+    
+    -- Label for "ProseAntiquePSMT:"
+    local proseHeader = WINDOW_MANAGER:CreateControl(nil, container, CT_LABEL)
+    proseHeader:SetFont("ZoFontGame")
+    proseHeader:SetAnchor(TOPLEFT, container, TOPLEFT, 10, 65)
+    proseHeader:SetText("|cFFFFFFProseAntiquePSMT:|r")
+    proseHeader:SetColor(1, 1, 1, 1)
+    proseHeader:SetDimensions(200, 25)
+    
+    -- ProseAntiquePSMT preview
+    local proseLabel = WINDOW_MANAGER:CreateControl(nil, container, CT_LABEL)
+    proseLabel:SetFont("esoui/common/fonts/ProseAntiquePSMT.slug|32|soft-shadow-thick")
+    proseLabel:SetAnchor(TOPLEFT, container, TOPLEFT, 10, 90)
+    proseLabel:SetText(previewText)
+    proseLabel:SetColor(1, 1, 1, 1)
+    proseLabel:SetDimensions(container:GetWidth() - 20, 30)
+    
+    -- Set container height to fit all previews
+    container:SetHeight(125)
 end
 
 
