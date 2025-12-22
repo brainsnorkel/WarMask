@@ -66,6 +66,7 @@ local countdownLabel = nil  -- Label on icon for countdown timer
 local isInCombat = false
 local flashVisible = true
 local countdownFlashVisible = true
+local countdownFlashActive = false  -- Track if countdown flash is already running
 
 -- =============================================================================
 -- DEBUG
@@ -380,6 +381,7 @@ end
 local function UpdateCountdownFlash()
     if not isCountdownActive then
         EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+        countdownFlashActive = false
         countdownFlashVisible = true
         return
     end
@@ -389,6 +391,7 @@ local function UpdateCountdownFlash()
     -- Only flash when below 10 seconds
     if remaining >= 10 or remaining <= 0 then
         EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+        countdownFlashActive = false
         countdownFlashVisible = true
         return
     end
@@ -407,6 +410,10 @@ local function UpdateCountdownFlash()
 end
 
 local function StartCountdownFlash()
+    -- Only start if not already running
+    if countdownFlashActive then return end
+    
+    countdownFlashActive = true
     countdownFlashVisible = true
     EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
     EM:RegisterForUpdate(WM.name .. "CountdownFlash", 500, UpdateCountdownFlash)
@@ -414,6 +421,7 @@ end
 
 local function StopCountdownFlash()
     EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+    countdownFlashActive = false
     countdownFlashVisible = true
     -- Reset to ready color
     if statusLabel and isCountdownActive then
