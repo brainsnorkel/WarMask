@@ -31,6 +31,7 @@ local BASH_ABILITY_ID = 21970           -- Bash ability ID
 local COUNTDOWN_DURATION = 60           -- seconds
 local INTERNAL_COOLDOWN = 10            -- seconds (ignore bash if countdown > 50s)
 local WARMASK_ITEM_NAME = "Huntsman's Warmask"  -- Mythic item name for equipment detection
+local WARMASK_ITEM_ID = 223189
 
 local EM = EVENT_MANAGER
 local WM_WINDOW = WINDOW_MANAGER
@@ -188,7 +189,7 @@ local function CreateUI()
     
     -- Countdown label on icon
     countdownLabel = WM_WINDOW:CreateControl(WM.name .. "CountdownLabel", iconTexture, CT_LABEL)
-    countdownLabel:SetFont("ZoFontWinH1")
+    countdownLabel:SetFont("esoui/common/fonts/Univers67.slug|54|soft-shadow-thick")
     countdownLabel:SetAnchor(CENTER, iconTexture, CENTER, 0, 0)
     countdownLabel:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
     countdownLabel:SetVerticalAlignment(TEXT_ALIGN_CENTER)
@@ -198,7 +199,7 @@ local function CreateUI()
     
     -- Status text label (for unit name or status)
     statusLabel = WM_WINDOW:CreateControl(WM.name .. "Label", mainWindow, CT_LABEL)
-    statusLabel:SetFont("ZoFontWinH2")
+    statusLabel:SetFont("esoui/common/fonts/Univers67.slug|54|soft-shadow-thick")
     statusLabel:SetAnchor(LEFT, iconTexture, RIGHT, 8, 0)
     statusLabel:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     statusLabel:SetVerticalAlignment(TEXT_ALIGN_CENTER)
@@ -234,31 +235,29 @@ function WM.ApplyUIScaling()
     end
     
     -- Calculate font from font scale
-    -- Available fonts from smallest to largest:
-    -- ZoFontWinH4 < ZoFontWinH3 < ZoFontWinH2 < ZoFontWinH1 < ZoFontHeader < ZoFontCallout
-    local fontName
+    local fontSize
     if fontScale >= 3.0 then
-        fontName = "ZoFontCallout"      -- 300%+ (largest)
+        fontSize = "54"      -- 300%+ (largest)
     elseif fontScale >= 2.0 then
-        fontName = "ZoFontHeader"       -- 200-299%
+        fontSize = "48"       -- 200-299%
     elseif fontScale >= 1.5 then
-        fontName = "ZoFontWinH1"        -- 150-199%
+        fontSize = "42"        -- 150-199%
     elseif fontScale >= 1.0 then
-        fontName = "ZoFontWinH2"        -- 100-149%
+        fontSize = "36"        -- 100-149%
     elseif fontScale >= 0.7 then
-        fontName = "ZoFontWinH3"        -- 70-99%
+        fontSize = "30"        -- 70-99%
     else
-        fontName = "ZoFontWinH4"        -- Below 70% (smallest)
+        fontSize = "24"        -- Below 70% (smallest)
     end
     
     -- Update countdown label font size
     if countdownLabel then
-        countdownLabel:SetFont(fontName)
+        countdownLabel:SetFont(string.format("esoui/common/fonts/Univers67.slug|%d|soft-shadow-thick", fontSize * 2))
     end
     
     -- Update status label font size
     if statusLabel then
-        statusLabel:SetFont(fontName)
+        statusLabel:SetFont(string.format("esoui/common/fonts/Univers67.slug|%d|soft-shadow-thick", fontSize * 2))
     end
     
     -- Update main window size to accommodate scaled icon
@@ -486,19 +485,16 @@ end
 -- =============================================================================
 local function IsWarmaskEquipped()
     -- Huntsman's Warmask is a mythic item that only goes in the head slot
-    local itemLink = GetItemLink(BAG_WORN, EQUIP_SLOT_HEAD)
+    local itemLink = GetItemLink(BAG_WORN, EQUIP_SLOT_HEAD, LINK_STYLE_DEFAULT)
     if itemLink and itemLink ~= "" then
         local itemName = GetItemLinkName(itemLink)
-        if itemName then
-            -- Check if the item name matches (case-insensitive)
-            local itemNameLower = string.lower(itemName)
-            local warmaskNameLower = string.lower(WARMASK_ITEM_NAME)
-            
-            if savedVars and savedVars.enableDebug then
+        local itemId = GetItemLinkItemId(itemLink)
+        if itemId then
+            if savedVars and savedVars.enableDebug and itemName then
                 Debug("Head slot item: " .. itemName)
             end
             
-            if itemNameLower == warmaskNameLower or string.find(itemNameLower, warmaskNameLower) then
+            if itemId == WARMASK_ITEM_ID then
                 Debug("Huntsman's Warmask mythic detected in head slot")
                 return true
             end
