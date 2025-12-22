@@ -5,17 +5,20 @@ An Elder Scrolls Online addon that tracks Mark of Hircine applications from Hunt
 ## Features
 
 - Displays an icon (Mark of Hircine) when Huntsman's Warmask is equipped
-- Shows "Ready." when available to bash and track a target
+- Shows "Bash something" when ready to track a target
 - Tracks bash applications with a 60-second countdown
 - Displays tracked target's name during countdown
 - Color-coded status:
   - Red (60s-50s): Cooldown period - bashing will NOT change the tracked target
   - Green (49s-0s): Ready period - bashing will update the tracked target
+- Visual alerts:
+  - "Bash something" text flashes red/green when in combat (reminds you to bash)
+  - Countdown timer flashes red/green when below 10 seconds (warns mark is expiring)
 - Draws a line to marked target when looking at them (line color matches status)
 - Configurable icon and font scaling (50%-200%)
 - Configurable settings via LibAddonMenu-2.0
 - Debug mode with detailed logging
-- Automatically resets to "Ready." when countdown expires or combat ends
+- Automatically resets to ready state when countdown expires or combat ends
 
 ## Installation
 
@@ -78,11 +81,14 @@ Warmask/
 ### State Variables
 
 ```lua
-hasWarmaskBuff      -- boolean: warmask mythic is equipped
-markedUnitId        -- number: unit ID of marked enemy
-markedUnitName      -- string: display name of marked enemy
-countdownEndTime    -- number: GetGameTimeSeconds() when countdown ends
-isCountdownActive   -- boolean: countdown is running
+hasWarmaskBuff         -- boolean: warmask mythic is equipped
+markedUnitId           -- number: unit ID of marked enemy
+markedUnitName         -- string: display name of marked enemy
+countdownEndTime       -- number: GetGameTimeSeconds() when countdown ends
+isCountdownActive      -- boolean: countdown is running
+isInCombat             -- boolean: player is in combat
+flashVisible           -- boolean: ready text flash state (for color toggle)
+countdownFlashVisible  -- boolean: countdown flash state (for color toggle)
 ```
 
 ### Event Flow
@@ -117,6 +123,10 @@ IsWarmaskEquipped()       -- Check if mythic is in head slot
 StartCountdown(name, id)  -- Begin 60s countdown for target
 UpdateCountdown()         -- Timer update (100ms interval)
 WM.ApplyUIScaling()       -- Apply icon/font scale settings
+StartReadyFlash()         -- Start "Bash something" text flash (in combat)
+StopReadyFlash()          -- Stop ready text flash
+StartCountdownFlash()     -- Start countdown flash (below 10s)
+StopCountdownFlash()      -- Stop countdown flash
 
 -- Line.lua
 WM.CreateLineUI()         -- Initialize line rendering controls
