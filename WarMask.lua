@@ -226,18 +226,39 @@ function WM.ApplyUIScaling()
     end
     
     -- Update countdown label font size (scaled based on icon size)
+    -- ZoFontWinH1 is largest, ZoFontWinH4 is smallest
     if countdownLabel then
-        -- Font size scales with icon, but also respects font scale setting
-        local countdownFontSize = math.floor(24 * iconScale * fontScale)
-        local fontLevel = math.max(1, math.min(4, math.floor(countdownFontSize / 8)))
+        -- Higher scale = lower font level number = bigger font
+        -- At 50% scale: fontLevel = 4 (smallest)
+        -- At 100% scale: fontLevel = 2 (medium)
+        -- At 200% scale: fontLevel = 1 (largest)
+        local combinedScale = iconScale * fontScale
+        local fontLevel
+        if combinedScale >= 1.5 then
+            fontLevel = 1
+        elseif combinedScale >= 1.0 then
+            fontLevel = 2
+        elseif combinedScale >= 0.7 then
+            fontLevel = 3
+        else
+            fontLevel = 4
+        end
         countdownLabel:SetFont(string.format("ZoFontWinH%d", fontLevel))
     end
     
     -- Update status label font size
     if statusLabel then
-        -- Base font is ZoFontWinH2, scale it
-        local statusFontSize = math.floor(20 * fontScale)
-        local fontLevel = math.max(1, math.min(4, math.floor(statusFontSize / 8)))
+        -- Higher scale = lower font level number = bigger font
+        local fontLevel
+        if fontScale >= 1.5 then
+            fontLevel = 1
+        elseif fontScale >= 1.0 then
+            fontLevel = 2
+        elseif fontScale >= 0.7 then
+            fontLevel = 3
+        else
+            fontLevel = 4
+        end
         statusLabel:SetFont(string.format("ZoFontWinH%d", fontLevel))
     end
     
