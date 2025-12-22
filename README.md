@@ -185,3 +185,4 @@ When enabled in settings, debug mode displays detailed information in chat:
 ## API Version
 
 101048 (Update 45)
+

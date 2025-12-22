@@ -62,6 +62,10 @@ local iconTexture = nil
 local statusLabel = nil
 local countdownLabel = nil  -- Label on icon for countdown timer
 
+-- Flash state
+local isInCombat = false
+local flashVisible = true
+
 -- =============================================================================
 -- DEBUG
 -- =============================================================================
@@ -323,6 +327,53 @@ local function UpdateCountdownOnIcon(time, r, g, b)
 end
 
 -- =============================================================================
+-- READY TEXT FLASH
+-- =============================================================================
+local function UpdateReadyFlash()
+    -- Only flash when: in combat, warmask equipped, not in countdown
+    if not isInCombat or not hasWarmaskBuff or isCountdownActive then
+        -- Stop flashing, set to ready color
+        EM:UnregisterForUpdate(WM.name .. "ReadyFlash")
+        flashVisible = true
+        if statusLabel then
+            local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+            statusLabel:SetColor(readyColor[1], readyColor[2], readyColor[3], 1)
+        end
+        return
+    end
+    
+    -- Toggle between ready and cooldown colors
+    flashVisible = not flashVisible
+    if statusLabel then
+        local color
+        if flashVisible then
+            color = savedVars.readyColor or {0, 1, 0, 1}
+        else
+            color = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
+        end
+        statusLabel:SetColor(color[1], color[2], color[3], 1)
+    end
+end
+
+local function StartReadyFlash()
+    -- Only start if conditions are met
+    if isInCombat and hasWarmaskBuff and not isCountdownActive then
+        flashVisible = true
+        EM:UnregisterForUpdate(WM.name .. "ReadyFlash")
+        EM:RegisterForUpdate(WM.name .. "ReadyFlash", 500, UpdateReadyFlash)
+    end
+end
+
+local function StopReadyFlash()
+    EM:UnregisterForUpdate(WM.name .. "ReadyFlash")
+    flashVisible = true
+    if statusLabel then
+        local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+        statusLabel:SetColor(readyColor[1], readyColor[2], readyColor[3], 1)
+    end
+end
+
+-- =============================================================================
 -- EQUIPMENT DETECTION
 -- =============================================================================
 local function IsWarmaskEquipped()
@@ -419,13 +470,17 @@ local function UpdateCountdown()
         EM:UnregisterForUpdate(WM.name .. "LineUpdate")
         WM.RemoveLine()
         
-        
         -- Clear countdown from icon
         UpdateCountdownOnIcon(0)
         
         if hasWarmaskBuff then
             local readyColor = savedVars.readyColor or {0, 1, 0, 1}
             UpdateStatusText("Bash something", readyColor[1], readyColor[2], readyColor[3])
+            
+            -- Start flashing again if still in combat
+            if isInCombat then
+                StartReadyFlash()
+            end
         end
         return
     end
@@ -447,6 +502,9 @@ local function UpdateCountdown()
 end
 
 local function StartCountdown(unitName, unitId)
+    -- Stop ready flash when countdown starts
+    StopReadyFlash()
+    
     -- Unregister any existing countdown update first
     EM:UnregisterForUpdate(WM.name .. "Countdown")
     EM:UnregisterForUpdate(WM.name .. "LineUpdate")
@@ -704,9 +762,18 @@ end
 -- COMBAT STATE
 -- =============================================================================
 local function OnCombatState(_, inCombat)
+    isInCombat = inCombat
+    
     if inCombat then
         CheckWarmaskStatus()
+        -- Start flashing if in ready state
+        if hasWarmaskBuff and not isCountdownActive then
+            StartReadyFlash()
+        end
     else
+        -- Stop flashing when leaving combat
+        StopReadyFlash()
+        
         -- Stop countdown and return to ready state when combat ends
         if isCountdownActive then
             isCountdownActive = false
@@ -915,4 +982,5 @@ SLASH_COMMANDS["/wmpos"] = function()
         d("  Main window: Not created")
     end
 end
+
 
