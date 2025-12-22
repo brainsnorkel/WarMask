@@ -15,7 +15,8 @@ An Elder Scrolls Online addon that tracks Mark of Hircine applications from Hunt
   - "Bash something" text flashes red/green when in combat (reminds you to bash)
   - Countdown timer flashes red/green when below 10 seconds (warns mark is expiring)
 - Draws a line to marked target when looking at them (line color matches status)
-- Configurable icon and font scaling (50%-200%)
+- Configurable icon and font scaling (50%-400% for fonts)
+- Font family selection (Univers67 or ProseAntiquePSMT) with preview
 - Configurable settings via LibAddonMenu-2.0
 - Debug mode with detailed logging
 - Automatically resets to ready state when countdown expires or combat ends
