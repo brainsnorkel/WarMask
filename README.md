@@ -204,9 +204,6 @@ When enabled in settings, debug mode displays detailed information in chat:
 
 - [ ] Add sound alert when countdown reaches 0
 - [ ] Add option to show/hide outside combat
-- [ ] Multiple target tracking (if warmask can mark multiple)
-- [ ] Configurable color settings in the settings menu
-- [ ] Integration with combat log for mark application confirmation
 
 ## Dependencies
 
