@@ -225,10 +225,15 @@ When enabled in settings, debug mode displays detailed information in chat:
 
 ## Changelog
 
-### v1.1.0
+### v1.2.0
 - Added multi-language localization support (English, German, Spanish, French, Russian, Japanese, Chinese)
 - Fixed icon position lock functionality
 - Note: Non-English translations are machine-generated; pull requests for improvements welcome
+
+### v1.1.0
+- Increased max font scale to 400% with larger font options
+- Changed pulse cycle to 2 seconds (1s each direction)
+- Fixed font scale being backwards (H1 is largest, not H4)
 
 ### v1.0.0
 - Initial release
