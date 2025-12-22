@@ -6,6 +6,14 @@
 ## DependsOn: LibAddonMenu-2.0>=41
 ## Description: Tracks Mark of Hircine from Huntsman's Warmask. Shows icon when buff is active, countdown when bash is applied to target.
 
+lang/Localization.lua
+lang/en.lua
+lang/zh.lua
+lang/es.lua
+lang/de.lua
+lang/fr.lua
+lang/ru.lua
+lang/ja.lua
 WarMask.lua
 Line.lua
 Settings.lua

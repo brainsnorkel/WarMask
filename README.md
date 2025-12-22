@@ -62,8 +62,30 @@ WarMask/
 ├── WarMask.lua      # Main addon logic
 ├── Line.lua         # Line rendering system
 ├── Settings.lua     # LibAddonMenu settings panel
+├── lang/            # Localization files
+│   ├── Localization.lua  # Localization system
+│   ├── en.lua       # English
+│   ├── de.lua       # German
+│   ├── es.lua       # Spanish
+│   ├── fr.lua       # French
+│   ├── ru.lua       # Russian
+│   ├── ja.lua       # Japanese
+│   └── zh.lua       # Chinese (Simplified)
 └── README.md        # This file
 ```
+
+## Localization
+
+This addon supports multiple languages:
+- English (en)
+- German (de)
+- Spanish (es)
+- French (fr)
+- Russian (ru)
+- Japanese (ja)
+- Chinese Simplified (zh)
+
+**Note:** All non-English localizations are machine translations and may contain errors or awkward phrasing. If you notice any translation issues or have improvements, please submit a pull request with corrections. Native speakers are especially encouraged to review and improve the translations!
 
 ## Architecture (For LLM Continuation)
 
@@ -202,6 +224,11 @@ When enabled in settings, debug mode displays detailed information in chat:
 101048 (Update 45)
 
 ## Changelog
+
+### v1.1.0
+- Added multi-language localization support (English, German, Spanish, French, Russian, Japanese, Chinese)
+- Fixed icon position lock functionality
+- Note: Non-English translations are machine-generated; pull requests for improvements welcome
 
 ### v1.0.0
 - Initial release

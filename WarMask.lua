@@ -19,6 +19,9 @@ local WM = WarMask
 WM.name = "WarMask"  -- Must match folder name for addon loading
 WM.version = "1.1.0"
 
+-- Localization is loaded via lang/Localization.lua and lang/*.lua files
+-- WM.LS() function is available after localization files are loaded
+
 -- =============================================================================
 -- CONSTANTS
 -- =============================================================================
@@ -88,7 +91,12 @@ local function CreateUI()
     mainWindow:SetDrawTier(DT_HIGH)
     mainWindow:SetClampedToScreen(true)
     mainWindow:SetMouseEnabled(true)
-    mainWindow:SetMovable(true)
+    -- Set initial movable state based on lock setting
+    if savedVars then
+        mainWindow:SetMovable(not savedVars.lockPosition)
+    else
+        mainWindow:SetMovable(true)  -- Default to movable if savedVars not loaded yet
+    end
     mainWindow:SetHidden(true)
     
     -- Position from saved vars (ensure defaults exist)
@@ -195,12 +203,12 @@ local function CreateUI()
     statusLabel:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     statusLabel:SetVerticalAlignment(TEXT_ALIGN_CENTER)
     statusLabel:SetColor(1, 1, 1, 1)
-    statusLabel:SetText("Bash something")
+    statusLabel:SetText(WM.LS("BASH_SOMETHING"))
     
     -- Apply scaling after all controls are created
     WM.ApplyUIScaling()
     
-    Debug("UI created")
+    Debug(WM.LS("DEBUG_UI_CREATED"))
 end
 
 -- =============================================================================
@@ -266,12 +274,20 @@ end
 -- =============================================================================
 -- UI VISIBILITY
 -- =============================================================================
+-- Function to update lock state (can be called from settings)
+function WM.UpdateLockState()
+    if mainWindow and savedVars then
+        -- If locked, window is not movable
+        -- If unlocked, window is movable
+        mainWindow:SetMovable(not savedVars.lockPosition)
+    end
+end
+
 local function ShowUI()
     if mainWindow then
         mainWindow:SetHidden(false)
         -- Respect lock setting
-        local inMouseMode = IsGameCameraUIModeActive()
-        mainWindow:SetMovable(not savedVars.lockPosition or inMouseMode)
+        WM.UpdateLockState()
         
         -- Ensure position is maintained when showing UI
         if savedVars and savedVars.position then
@@ -519,17 +535,17 @@ local function CheckWarmaskStatus()
     
     if hasWarmaskBuff then
         if not hadEquipped then
-            Debug("Warmask equipped")
+            Debug(WM.LS("DEBUG_WARMASK_EQUIPPED"))
         end
         ShowUI()
         if not isCountdownActive then
             local readyColor = savedVars.readyColor or {0, 1, 0, 1}
-            UpdateStatusText("Bash something", readyColor[1], readyColor[2], readyColor[3])
+            UpdateStatusText(WM.LS("BASH_SOMETHING"), readyColor[1], readyColor[2], readyColor[3])
             UpdateCountdownOnIcon(0)  -- Hide countdown on icon
         end
     else
         if hadEquipped then
-            Debug("Warmask unequipped")
+            Debug(WM.LS("DEBUG_WARMASK_UNEQUIPPED"))
         end
         HideUI()
         -- Reset state when mythic is unequipped
@@ -568,7 +584,7 @@ local function UpdateCountdown()
         
         if hasWarmaskBuff then
             local readyColor = savedVars.readyColor or {0, 1, 0, 1}
-            UpdateStatusText("Bash something", readyColor[1], readyColor[2], readyColor[3])
+            UpdateStatusText(WM.LS("BASH_SOMETHING"), readyColor[1], readyColor[2], readyColor[3])
             
             -- Start flashing again if still in combat
             if isInCombat then
@@ -586,7 +602,7 @@ local function UpdateCountdown()
     end
     
     -- Update unit name in status label with color based on remaining time
-    local displayName = markedUnitName or "Target"
+    local displayName = markedUnitName or WM.LS("TARGET")
     local cooldownColor = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
     local readyColor = savedVars.readyColor or {0, 1, 0, 1}
     
@@ -894,7 +910,7 @@ local function OnCombatState(_, inCombat)
             
             if hasWarmaskBuff then
                 local readyColor = savedVars.readyColor or {0, 1, 0, 1}
-                UpdateStatusText("Bash something", readyColor[1], readyColor[2], readyColor[3])
+                UpdateStatusText(WM.LS("BASH_SOMETHING"), readyColor[1], readyColor[2], readyColor[3])
             end
         end
         CheckWarmaskStatus()
@@ -911,8 +927,8 @@ function WM.Initialize()
     
     -- Debug: Addon initialized
     if savedVars.enableDebug then
-        d("[Warmask] Addon initialized - Version " .. WM.version)
-        d("[Warmask] Debug mode enabled")
+        d("[Warmask] " .. WM.LS("DEBUG_ADDON_INITIALIZED", WM.version))
+        d("[Warmask] " .. WM.LS("DEBUG_MODE_ENABLED"))
     end
     
     -- Create UI
@@ -946,7 +962,7 @@ function WM.Initialize()
     EM:RegisterForEvent(WM.name .. "Target", EVENT_RETICLE_TARGET_CHANGED, OnReticleTargetChanged)
     
     -- Debug: Events registered
-    Debug("Events registered: PLAYER_ACTIVATED, INVENTORY_SINGLE_SLOT_UPDATE, EFFECT_CHANGED, COMBAT_EVENT, PLAYER_COMBAT_STATE, RETICLE_TARGET_CHANGED")
+    Debug(WM.LS("DEBUG_EVENTS_REGISTERED"))
     
     -- Initial check (this will show/hide UI based on Warmask detection)
     CheckWarmaskStatus()
@@ -987,7 +1003,7 @@ function WM.Initialize()
         end
     end
     
-    Debug("Addon initialization complete")
+    Debug(WM.LS("DEBUG_ADDON_COMPLETE"))
 end
 
 local function OnAddOnLoaded(_, addonName)
@@ -997,7 +1013,7 @@ local function OnAddOnLoaded(_, addonName)
     
     -- Debug: Addon loaded
     if savedVars and savedVars.enableDebug then
-        d("[Warmask] Addon loaded - Version " .. WM.version)
+        d("[Warmask] " .. WM.LS("DEBUG_ADDON_LOADED", WM.version))
     end
 end
 
@@ -1010,84 +1026,84 @@ SLASH_COMMANDS["/warmask"] = function()
     if mainWindow then
         local isHidden = mainWindow:IsHidden()
         mainWindow:SetHidden(not isHidden)
-        d("[Warmask] UI " .. (isHidden and "shown" or "hidden"))
+        d("[Warmask] UI " .. (isHidden and WM.LS("SLASH_UI_SHOWN") or WM.LS("SLASH_UI_HIDDEN")))
     end
 end
 
 SLASH_COMMANDS["/wmdebug"] = function()
-    d("[Warmask] Debug Info:")
-    d("  Warmask Mythic Equipped: " .. tostring(IsWarmaskEquipped()))
-    d("  Warmask Buff Active: " .. tostring(HasWarmaskBuff()))
-    d("  UI Should Show: " .. tostring(hasWarmaskBuff))
-    d("  UI Hidden: " .. tostring(mainWindow and mainWindow:IsHidden() or "nil"))
-    d("  Countdown Active: " .. tostring(isCountdownActive))
-    d("  Marked Unit: " .. tostring(markedUnitName))
+    d("[Warmask] " .. WM.LS("SLASH_DEBUG_INFO"))
+    d("  " .. WM.LS("SLASH_DEBUG_WARMASK_EQUIPPED", tostring(IsWarmaskEquipped())))
+    d("  " .. WM.LS("SLASH_DEBUG_WARMASK_BUFF", tostring(HasWarmaskBuff())))
+    d("  " .. WM.LS("SLASH_DEBUG_UI_SHOULD_SHOW", tostring(hasWarmaskBuff)))
+    d("  " .. WM.LS("SLASH_DEBUG_UI_HIDDEN", tostring(mainWindow and mainWindow:IsHidden() or "nil")))
+    d("  " .. WM.LS("SLASH_DEBUG_COUNTDOWN_ACTIVE", tostring(isCountdownActive)))
+    d("  " .. WM.LS("SLASH_DEBUG_MARKED_UNIT", tostring(markedUnitName)))
     if isCountdownActive then
-        d("  Remaining: " .. string.format("%.1f", countdownEndTime - GetGameTimeSeconds()) .. "s")
+        d("  " .. WM.LS("SLASH_DEBUG_REMAINING", countdownEndTime - GetGameTimeSeconds()))
     end
     if savedVars and savedVars.position then
-        d("  Saved Position: x=" .. savedVars.position.x .. ", y=" .. savedVars.position.y)
+        d("  " .. WM.LS("SLASH_DEBUG_POSITION_SAVED", savedVars.position.x, savedVars.position.y))
     else
-        d("  Saved Position: Not set")
+        d("  " .. WM.LS("SLASH_DEBUG_POSITION_NOT_SET"))
     end
     if mainWindow then
         local point, relativeTo, relativePoint, offsetX, offsetY = mainWindow:GetAnchor()
-        d("  Current Window Position: x=" .. (offsetX or "nil") .. ", y=" .. (offsetY or "nil"))
-        d("  Window Movable: " .. tostring(mainWindow:IsMovable()))
-        d("  Lock Position Setting: " .. tostring(savedVars and savedVars.lockPosition or "nil"))
+        d("  " .. WM.LS("SLASH_DEBUG_POSITION_CURRENT", offsetX or "nil", offsetY or "nil"))
+        d("  " .. WM.LS("SLASH_DEBUG_WINDOW_MOVABLE", tostring(mainWindow:IsMovable())))
+        d("  " .. WM.LS("SLASH_DEBUG_LOCK_POSITION", tostring(savedVars and savedVars.lockPosition or "nil")))
     end
-    d("  Enable debug mode in settings for detailed detection info")
+    d("  " .. WM.LS("SLASH_DEBUG_ENABLE_DEBUG"))
 end
 
 SLASH_COMMANDS["/wmtest"] = function()
-    d("[Warmask] Testing mythic detection...")
+    d("[Warmask] " .. WM.LS("SLASH_TEST_MYTHIC"))
     local itemLink = GetItemLink(BAG_WORN, EQUIP_SLOT_HEAD)
     if itemLink and itemLink ~= "" then
         local itemName = GetItemLinkName(itemLink)
-        d("  Head slot item: " .. (itemName or "Unknown"))
-        d("  Item link: " .. itemLink)
+        d("  " .. WM.LS("SLASH_TEST_HEAD_SLOT", itemName or "Unknown"))
+        d("  " .. WM.LS("SLASH_TEST_ITEM_LINK", itemLink))
         
         local isWarmask = IsWarmaskEquipped()
-        d("  Is Warmask: " .. tostring(isWarmask))
-        d("  Looking for: '" .. WARMASK_ITEM_NAME .. "'")
+        d("  " .. WM.LS("SLASH_TEST_IS_WARMASK", tostring(isWarmask)))
+        d("  " .. WM.LS("SLASH_TEST_LOOKING_FOR", WARMASK_ITEM_NAME))
     else
-        d("  Head slot: Empty")
+        d("  " .. WM.LS("SLASH_TEST_HEAD_EMPTY"))
     end
 end
 
 SLASH_COMMANDS["/wmpos"] = function()
-    d("[Warmask] Position Information:")
+    d("[Warmask] " .. WM.LS("SLASH_POS_INFO"))
     if savedVars and savedVars.position then
-        d("  Saved Position: x=" .. savedVars.position.x .. ", y=" .. savedVars.position.y)
+        d("  " .. WM.LS("SLASH_DEBUG_POSITION_SAVED", savedVars.position.x, savedVars.position.y))
     else
-        d("  Saved Position: Not set")
+        d("  " .. WM.LS("SLASH_DEBUG_POSITION_NOT_SET"))
     end
     if mainWindow then
         local point, relativeTo, relativePoint, offsetX, offsetY = mainWindow:GetAnchor()
-        d("  Current Anchor:")
-        d("    Point: " .. tostring(point))
-        d("    Relative To: " .. tostring(relativeTo))
-        d("    Relative Point: " .. tostring(relativePoint))
-        d("    Offset X: " .. (offsetX or "nil"))
-        d("    Offset Y: " .. (offsetY or "nil"))
-        d("  Window Hidden: " .. tostring(mainWindow:IsHidden()))
-        d("  Window Movable: " .. tostring(mainWindow:IsMovable()))
+        d("  " .. WM.LS("SLASH_POS_ANCHOR"))
+        d("    " .. WM.LS("SLASH_POS_POINT", tostring(point)))
+        d("    " .. WM.LS("SLASH_POS_RELATIVE_TO", tostring(relativeTo)))
+        d("    " .. WM.LS("SLASH_POS_RELATIVE_POINT", tostring(relativePoint)))
+        d("    " .. WM.LS("SLASH_POS_OFFSET_X", offsetX or "nil"))
+        d("    " .. WM.LS("SLASH_POS_OFFSET_Y", offsetY or "nil"))
+        d("  " .. WM.LS("SLASH_POS_WINDOW_HIDDEN", tostring(mainWindow:IsHidden())))
+        d("  " .. WM.LS("SLASH_POS_WINDOW_MOVABLE", tostring(mainWindow:IsMovable())))
         
         -- Test setting position
         if savedVars and savedVars.position then
-            d("  Testing position restore...")
+            d("  " .. WM.LS("SLASH_POS_TEST_RESTORE"))
             mainWindow:ClearAnchors()
             mainWindow:SetAnchor(CENTER, GuiRoot, CENTER, savedVars.position.x, savedVars.position.y)
             local point2, relativeTo2, relativePoint2, offsetX2, offsetY2 = mainWindow:GetAnchor()
-            d("  After restore - Offset X: " .. (offsetX2 or "nil") .. ", Y: " .. (offsetY2 or "nil"))
+            d("  " .. WM.LS("SLASH_POS_AFTER_RESTORE", offsetX2 or "nil", offsetY2 or "nil"))
             if offsetX2 and offsetY2 then
                 local diffX = math.abs(offsetX2 - savedVars.position.x)
                 local diffY = math.abs(offsetY2 - savedVars.position.y)
-                d("  Difference: x=" .. string.format("%.3f", diffX) .. ", y=" .. string.format("%.3f", diffY))
+                d("  " .. WM.LS("SLASH_POS_DIFFERENCE", diffX, diffY))
             end
         end
     else
-        d("  Main window: Not created")
+        d("  " .. WM.LS("SLASH_POS_WINDOW_NOT_CREATED"))
     end
 end
 
