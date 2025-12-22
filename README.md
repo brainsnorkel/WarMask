@@ -22,7 +22,7 @@ An Elder Scrolls Online addon that tracks Mark of Hircine applications from Hunt
 
 ## Installation
 
-1. Copy the `Warmask` folder to your ESO AddOns directory
+1. Copy the `WarMask` folder to your ESO AddOns directory
 2. Ensure LibAddonMenu-2.0 is installed
 3. Enable the addon in-game
 
@@ -57,7 +57,7 @@ Access via ESO Settings → Add-ons → Warmask. The panel includes:
 ## File Structure
 
 ```
-Warmask/
+WarMask/
 ├── WarMask.txt      # Addon manifest
 ├── WarMask.lua      # Main addon logic
 ├── Line.lua         # Line rendering system
@@ -89,6 +89,7 @@ isCountdownActive      -- boolean: countdown is running
 isInCombat             -- boolean: player is in combat
 flashVisible           -- boolean: ready text flash state (for color toggle)
 countdownFlashVisible  -- boolean: countdown flash state (for color toggle)
+countdownFlashActive   -- boolean: tracks if countdown flash timer is running
 ```
 
 ### Event Flow
@@ -102,12 +103,12 @@ countdownFlashVisible  -- boolean: countdown flash state (for color toggle)
 
 3. **Bash Detection**: `EVENT_COMBAT_EVENT` filtered to `BASH_ABILITY_ID`
    - Check `sourceType == COMBAT_UNIT_TYPE_PLAYER`
+   - Accepts result types: `ACTION_RESULT_DAMAGE`, `ACTION_RESULT_BLOCKED_DAMAGE`, or miss (2)
    - Check internal cooldown (countdown must be ≤50s or inactive)
    - Start 60-second countdown with target name
 
-4. **Line Rendering**: `EVENT_RETICLE_TARGET_CHANGED` + periodic update
-   - Check if `reticleover` has `MARK_OF_HIRCINE_ID` debuff
-   - Verify unit ID matches the bashed target
+4. **Line Rendering**: `EVENT_RETICLE_TARGET_CHANGED` + periodic update (50ms)
+   - Check if `reticleover` name matches the bashed target name
    - If yes, draw line from player to target
    - Line color matches countdown status (red/green)
 
@@ -120,6 +121,7 @@ countdownFlashVisible  -- boolean: countdown flash state (for color toggle)
 -- WarMask.lua
 CheckWarmaskStatus()      -- Check equipment and show/hide UI
 IsWarmaskEquipped()       -- Check if mythic is in head slot
+HasWarmaskBuff()          -- Check if warmask buff is active (fallback)
 StartCountdown(name, id)  -- Begin 60s countdown for target
 UpdateCountdown()         -- Timer update (100ms interval)
 WM.ApplyUIScaling()       -- Apply icon/font scale settings
@@ -132,6 +134,7 @@ StopCountdownFlash()      -- Stop countdown flash
 WM.CreateLineUI()         -- Initialize line rendering controls
 WM.DrawLineToTarget()     -- Draw line to reticleover
 WM.RemoveLine()           -- Hide line
+GetViewCoordinates()      -- Convert world coords to screen coords
 
 -- Settings.lua
 WM.BuildMenu()            -- Create LibAddonMenu panel
@@ -169,9 +172,11 @@ When enabled in settings, debug mode displays detailed information in chat:
 
 1. **Line only works when targeting**: ESO doesn't provide world position for arbitrary unit IDs, only for unit tags. The line only displays when looking directly at the marked enemy (`reticleover`).
 
-2. **Debuff detection**: Currently checks for `MARK_OF_HIRCINE_ID` on target. If the actual debuff ID differs from the ability icon ID, this needs adjustment.
+2. **Name-based matching**: The addon matches targets by name rather than unit ID, since ESO's API doesn't provide `GetUnitId()` for unit tags. Multiple enemies with identical names cannot be distinguished.
 
-3. **Unit ID tracking**: The addon tracks the bashed target by unit ID, but ESO may reuse unit IDs in some cases.
+3. **Debuff detection**: The line drawing checks target name match rather than debuff presence, since other players can also apply Mark of Hircine.
+
+4. **Unit ID tracking**: The addon tracks the bashed target by unit ID internally, but ESO may reuse unit IDs in some cases.
 
 ## Potential Improvements
 
@@ -196,3 +201,17 @@ When enabled in settings, debug mode displays detailed information in chat:
 
 101048 (Update 45)
 
+## Changelog
+
+### v1.0.0
+- Initial release
+- Equipment-based detection of Huntsman's Warmask in head slot
+- 60-second countdown timer with target name display
+- Color-coded status indicators (red for cooldown, green for ready)
+- "Bash something" text flashing in combat when ready
+- Countdown timer flashing below 10 seconds
+- Line rendering to marked target when looking at them
+- Configurable icon and font scaling (50%-200%)
+- Settings panel via LibAddonMenu-2.0
+- Slash commands: /warmask, /wmdebug, /wmtest, /wmpos
+- Debug mode with detailed logging
