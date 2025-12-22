@@ -17,7 +17,7 @@ WarMask = WarMask or {}
 local WM = WarMask
 
 WM.name = "WarMask"  -- Must match folder name for addon loading
-WM.version = "1.2.1"
+WM.version = "1.3.0"
 
 -- Localization is loaded via lang/Localization.lua and lang/*.lua files
 -- WM.LS() function is available after localization files are loaded
@@ -1117,6 +1117,7 @@ SLASH_COMMANDS["/wmpos"] = function()
         d("  " .. WM.LS("SLASH_POS_WINDOW_NOT_CREATED"))
     end
 end
+
 
 
 

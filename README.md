@@ -46,7 +46,8 @@ Access via ESO Settings → Add-ons → Warmask. The panel includes:
 - Lock/unlock icon position for dragging
 - Reset position to center
 - Icon scale (50%-200%)
-- Font scale (50%-200%)
+- Font scale (50%-400%)
+- Font family selection (Univers67 or ProseAntiquePSMT) with live preview
 
 **Line Settings:**
 - Enable/disable line drawing to marked target
@@ -173,7 +174,8 @@ WarMaskSV = {
     readyColor = { 0, 1, 0, 1 },         -- RGBA green (49s and lower)
     enableDebug = false,              -- Enable debug information in chat
     iconScale = 100,                  -- Icon scale percentage (50-200)
-    fontScale = 100,                  -- Font scale percentage (50-200)
+    fontScale = 100,                   -- Font scale percentage (50-400)
+    fontFamily = "Univers67",         -- Font family: "Univers67" or "ProseAntiquePSMT"
 }
 ```
 
@@ -221,6 +223,11 @@ When enabled in settings, debug mode displays detailed information in chat:
 101048 (Update 45)
 
 ## Changelog
+
+### v1.3.0
+- Added font family selection (Univers67 or ProseAntiquePSMT)
+- Added font preview in settings showing both font options
+- Font selection applies to all addon text (status and countdown)
 
 ### v1.2.1
 - Improved equipped detection logic
