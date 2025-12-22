@@ -225,6 +225,11 @@ When enabled in settings, debug mode displays detailed information in chat:
 
 ## Changelog
 
+### v1.2.1
+- Improved equipped detection logic
+- Font rendering improvements
+- Code formatting updates
+
 ### v1.2.0
 - Added multi-language localization support (English, German, Spanish, French, Russian, Japanese, Chinese)
 - Fixed icon position lock functionality
