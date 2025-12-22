@@ -365,9 +365,9 @@ local function UpdateReadyPulse()
         return
     end
     
-    -- Calculate pulse position (0 to 1 to 0 over 1 second cycle)
+    -- Calculate pulse position (0 to 1 to 0 over 2 second cycle)
     local elapsed = GetGameTimeSeconds() - readyPulseStartTime
-    local cycleTime = 1.0  -- 1 second for full cycle (0.5s each direction)
+    local cycleTime = 2.0  -- 2 seconds for full cycle (1s each direction)
     local t = (elapsed % cycleTime) / cycleTime  -- 0 to 1
     -- Convert to ping-pong (0 to 1 to 0)
     local pulseT = t < 0.5 and (t * 2) or (2 - t * 2)
@@ -425,9 +425,9 @@ local function UpdateCountdownPulse()
         return
     end
     
-    -- Calculate pulse position (0 to 1 to 0 over 1 second cycle)
+    -- Calculate pulse position (0 to 1 to 0 over 2 second cycle)
     local elapsed = GetGameTimeSeconds() - countdownPulseStartTime
-    local cycleTime = 1.0  -- 1 second for full cycle (0.5s each direction)
+    local cycleTime = 2.0  -- 2 seconds for full cycle (1s each direction)
     local t = (elapsed % cycleTime) / cycleTime  -- 0 to 1
     -- Convert to ping-pong (0 to 1 to 0)
     local pulseT = t < 0.5 and (t * 2) or (2 - t * 2)
