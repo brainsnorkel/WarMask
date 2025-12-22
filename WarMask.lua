@@ -65,6 +65,7 @@ local countdownLabel = nil  -- Label on icon for countdown timer
 -- Flash state
 local isInCombat = false
 local flashVisible = true
+local countdownFlashVisible = true
 
 -- =============================================================================
 -- DEBUG
@@ -374,6 +375,49 @@ local function StopReadyFlash()
 end
 
 -- =============================================================================
+-- COUNTDOWN FLASH (below 10s)
+-- =============================================================================
+local function UpdateCountdownFlash()
+    if not isCountdownActive then
+        EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+        countdownFlashVisible = true
+        return
+    end
+    
+    local remaining = countdownEndTime - GetGameTimeSeconds()
+    
+    -- Only flash when below 10 seconds
+    if remaining >= 10 or remaining <= 0 then
+        EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+        countdownFlashVisible = true
+        return
+    end
+    
+    -- Toggle between ready and cooldown colors
+    countdownFlashVisible = not countdownFlashVisible
+    if countdownLabel then
+        local color
+        if countdownFlashVisible then
+            color = savedVars.readyColor or {0, 1, 0, 1}
+        else
+            color = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
+        end
+        countdownLabel:SetColor(color[1], color[2], color[3], 1)
+    end
+end
+
+local function StartCountdownFlash()
+    countdownFlashVisible = true
+    EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+    EM:RegisterForUpdate(WM.name .. "CountdownFlash", 500, UpdateCountdownFlash)
+end
+
+local function StopCountdownFlash()
+    EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
+    countdownFlashVisible = true
+end
+
+-- =============================================================================
 -- EQUIPMENT DETECTION
 -- =============================================================================
 local function IsWarmaskEquipped()
@@ -468,6 +512,7 @@ local function UpdateCountdown()
         markedUnitName = nil
         EM:UnregisterForUpdate(WM.name .. "Countdown")
         EM:UnregisterForUpdate(WM.name .. "LineUpdate")
+        StopCountdownFlash()
         WM.RemoveLine()
         
         -- Clear countdown from icon
@@ -485,6 +530,13 @@ local function UpdateCountdown()
         return
     end
     
+    -- Start countdown flash when below 10 seconds
+    if remaining < 10 then
+        StartCountdownFlash()
+    else
+        StopCountdownFlash()
+    end
+    
     -- Update unit name in status label with color based on remaining time
     local displayName = markedUnitName or "Target"
     local cooldownColor = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
@@ -495,9 +547,18 @@ local function UpdateCountdown()
         UpdateStatusText(displayName, cooldownColor[1], cooldownColor[2], cooldownColor[3])
         UpdateCountdownOnIcon(remaining, cooldownColor[1], cooldownColor[2], cooldownColor[3])
     else
-        -- Ready period (49s and lower)
+        -- Ready period (49s and lower) - but don't override flash color if flashing
         UpdateStatusText(displayName, readyColor[1], readyColor[2], readyColor[3])
-        UpdateCountdownOnIcon(remaining, readyColor[1], readyColor[2], readyColor[3])
+        -- Only set countdown color if not flashing (flash handles its own colors)
+        if remaining >= 10 then
+            UpdateCountdownOnIcon(remaining, readyColor[1], readyColor[2], readyColor[3])
+        else
+            -- Just update the text, flash handles the color
+            if countdownLabel then
+                countdownLabel:SetText(string.format("%.0f", remaining))
+                countdownLabel:SetHidden(false)
+            end
+        end
     end
 end
 
