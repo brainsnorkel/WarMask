@@ -375,7 +375,7 @@ local function StopReadyFlash()
 end
 
 -- =============================================================================
--- COUNTDOWN FLASH (below 10s)
+-- COUNTDOWN FLASH (below 10s) - flashes target name
 -- =============================================================================
 local function UpdateCountdownFlash()
     if not isCountdownActive then
@@ -393,16 +393,16 @@ local function UpdateCountdownFlash()
         return
     end
     
-    -- Toggle between ready and cooldown colors
+    -- Toggle between ready and cooldown colors for target name
     countdownFlashVisible = not countdownFlashVisible
-    if countdownLabel then
+    if statusLabel then
         local color
         if countdownFlashVisible then
             color = savedVars.readyColor or {0, 1, 0, 1}
         else
             color = savedVars.cooldownColor or {1, 0.3, 0.3, 1}
         end
-        countdownLabel:SetColor(color[1], color[2], color[3], 1)
+        statusLabel:SetColor(color[1], color[2], color[3], 1)
     end
 end
 
@@ -415,6 +415,11 @@ end
 local function StopCountdownFlash()
     EM:UnregisterForUpdate(WM.name .. "CountdownFlash")
     countdownFlashVisible = true
+    -- Reset to ready color
+    if statusLabel and isCountdownActive then
+        local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+        statusLabel:SetColor(readyColor[1], readyColor[2], readyColor[3], 1)
+    end
 end
 
 -- =============================================================================
@@ -547,18 +552,17 @@ local function UpdateCountdown()
         UpdateStatusText(displayName, cooldownColor[1], cooldownColor[2], cooldownColor[3])
         UpdateCountdownOnIcon(remaining, cooldownColor[1], cooldownColor[2], cooldownColor[3])
     else
-        -- Ready period (49s and lower) - but don't override flash color if flashing
-        UpdateStatusText(displayName, readyColor[1], readyColor[2], readyColor[3])
-        -- Only set countdown color if not flashing (flash handles its own colors)
+        -- Ready period (49s and lower)
+        -- Only update status text color if not in flash mode (below 10s)
         if remaining >= 10 then
-            UpdateCountdownOnIcon(remaining, readyColor[1], readyColor[2], readyColor[3])
+            UpdateStatusText(displayName, readyColor[1], readyColor[2], readyColor[3])
         else
             -- Just update the text, flash handles the color
-            if countdownLabel then
-                countdownLabel:SetText(string.format("%.0f", remaining))
-                countdownLabel:SetHidden(false)
+            if statusLabel then
+                statusLabel:SetText(displayName)
             end
         end
+        UpdateCountdownOnIcon(remaining, readyColor[1], readyColor[2], readyColor[3])
     end
 end
 
