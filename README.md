@@ -247,3 +247,4 @@ When enabled in settings, debug mode displays detailed information in chat:
 - Settings panel via LibAddonMenu-2.0
 - Slash commands: /warmask, /wmdebug, /wmtest, /wmpos
 - Debug mode with detailed logging
+
