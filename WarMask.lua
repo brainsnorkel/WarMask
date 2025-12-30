@@ -4,7 +4,9 @@
 --[[
     Addon Name:     Warmask
     Description:    Tracks Mark of Hircine applications from Huntsman's Warmask
-    Version:        1.0.0
+    Version:        1.4.0
+    Author:         @brainsnorkel
+    Year:           2025
     
     Shows an icon when Warmask buff is active. When you bash an enemy,
     displays the target name with a 60-second countdown.
@@ -17,7 +19,7 @@ WarMask = WarMask or {}
 local WM = WarMask
 
 WM.name = "WarMask"  -- Must match folder name for addon loading
-WM.version = "1.3.0"
+WM.version = "1.4.0"
 
 -- Localization is loaded via lang/Localization.lua and lang/*.lua files
 -- WM.LS() function is available after localization files are loaded
@@ -49,6 +51,8 @@ WM.defaults = {
     iconScale = 100,  -- Icon scale percentage (100 = 100%)
     fontScale = 100,  -- Font scale percentage (100 = 100%)
     fontFamily = "Univers67",  -- Font family: "Univers67" or "ProseAntiquePSMT"
+    hideIconOutOfCombat = false,  -- Hide icon when not in combat
+    roleplayingMode = false,  -- Use roleplaying text ("Bash, thou must" instead of "Bash something")
 }
 
 -- =============================================================================
@@ -80,6 +84,37 @@ local function Debug(msg)
         if string.find(msg, "Warmask equipped") or string.find(msg, "Warmask unequipped") or hasWarmaskBuff then
             d("[Warmask] " .. msg)
         end
+    end
+end
+
+-- =============================================================================
+-- CHAT LOGGING (similar to WizardsWardrobe format)
+-- =============================================================================
+function WM.Log(message, color)
+    if not message then return end
+    color = color or "FFFFFF"  -- Default to white
+    -- Format: |c18bed8[|c65d3b0W|cb2e789M|cfffc61]|r|c[color] message|r
+    -- Using similar color scheme to WizardsWardrobe but with WM prefix
+    local formattedMessage = string.format("|cFFD700[|cFFA500W|r|cFFD700M|r]|r|c%s %s|r", color, message)
+    CHAT_ROUTER:AddSystemMessage(formattedMessage)
+end
+
+-- =============================================================================
+-- TEXT HELPERS
+-- =============================================================================
+local function GetBashText()
+    if savedVars and savedVars.roleplayingMode then
+        return "Bash, thou must"
+    else
+        -- Use fallback if WM.LS is not available yet
+        if WM.LS and type(WM.LS) == "function" then
+            local success, result = pcall(function() return WM.LS("BASH_SOMETHING") end)
+            if success and result then
+                return result
+            end
+        end
+        -- Fallback to default text
+        return "Bash something"
     end
 end
 
@@ -218,7 +253,7 @@ local function CreateUI()
     statusLabel:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     statusLabel:SetVerticalAlignment(TEXT_ALIGN_CENTER)
     statusLabel:SetColor(1, 1, 1, 1)
-    statusLabel:SetText(WM.LS("BASH_SOMETHING"))
+    statusLabel:SetText(GetBashText())
     
     -- Apply scaling after all controls are created
     WM.ApplyUIScaling()
@@ -299,6 +334,12 @@ end
 
 local function ShowUI()
     if mainWindow then
+        -- Check if we should hide when out of combat
+        if savedVars and savedVars.hideIconOutOfCombat and not isInCombat then
+            mainWindow:SetHidden(true)
+            return
+        end
+        
         mainWindow:SetHidden(false)
         -- Respect lock setting
         WM.UpdateLockState()
@@ -547,16 +588,18 @@ local function CheckWarmaskStatus()
     if hasWarmaskBuff then
         if not hadEquipped then
             Debug(WM.LS("DEBUG_WARMASK_EQUIPPED"))
+            WM.Log("Warmask equipped", "00FF00")  -- Green color
         end
         ShowUI()
         if not isCountdownActive then
             local readyColor = savedVars.readyColor or {0, 1, 0, 1}
-            UpdateStatusText(WM.LS("BASH_SOMETHING"), readyColor[1], readyColor[2], readyColor[3])
+            UpdateStatusText(GetBashText(), readyColor[1], readyColor[2], readyColor[3])
             UpdateCountdownOnIcon(0)  -- Hide countdown on icon
         end
     else
         if hadEquipped then
             Debug(WM.LS("DEBUG_WARMASK_UNEQUIPPED"))
+            WM.Log("Warmask un-equipped")  -- Default color
         end
         HideUI()
         -- Reset state when mythic is unequipped
@@ -595,7 +638,7 @@ local function UpdateCountdown()
         
         if hasWarmaskBuff then
             local readyColor = savedVars.readyColor or {0, 1, 0, 1}
-            UpdateStatusText(WM.LS("BASH_SOMETHING"), readyColor[1], readyColor[2], readyColor[3])
+            UpdateStatusText(GetBashText(), readyColor[1], readyColor[2], readyColor[3])
             
             -- Start flashing again if still in combat
             if isInCombat then
@@ -921,10 +964,16 @@ local function OnCombatState(_, inCombat)
             
             if hasWarmaskBuff then
                 local readyColor = savedVars.readyColor or {0, 1, 0, 1}
-                UpdateStatusText(WM.LS("BASH_SOMETHING"), readyColor[1], readyColor[2], readyColor[3])
+                UpdateStatusText(GetBashText(), readyColor[1], readyColor[2], readyColor[3])
             end
         end
-        CheckWarmaskStatus()
+        
+        -- Check if we should hide icon when out of combat
+        if savedVars and savedVars.hideIconOutOfCombat and hasWarmaskBuff then
+            HideUI()
+        else
+            CheckWarmaskStatus()
+        end
     end
 end
 
@@ -935,6 +984,9 @@ function WM.Initialize()
     -- Load saved variables
     savedVars = ZO_SavedVars:NewAccountWide("WarMaskSV", 1, nil, WM.defaults)
     WM.savedVars = savedVars
+    
+    -- Initialize combat state
+    isInCombat = IsUnitInCombat("player")
     
     -- Debug: Addon initialized
     if savedVars.enableDebug then
@@ -988,6 +1040,15 @@ function WM.Initialize()
     WM.isCountdownActive = function() return isCountdownActive end
     WM.countdownEndTime = function() return countdownEndTime end
     WM.markedUnitId = function() return markedUnitId end
+    -- Expose warmask equipped status for settings panel
+    WM.IsWarmaskEquipped = IsWarmaskEquipped
+    -- Expose function to update ready text (for roleplaying mode changes)
+    WM.UpdateReadyText = function()
+        if hasWarmaskBuff and not isCountdownActive and statusLabel then
+            local readyColor = savedVars.readyColor or {0, 1, 0, 1}
+            UpdateStatusText(GetBashText(), readyColor[1], readyColor[2], readyColor[3])
+        end
+    end
     
     -- Re-check Warmask status after a short delay (equipment might not be loaded yet)
     zo_callLater(function()
@@ -1117,6 +1178,7 @@ SLASH_COMMANDS["/wmpos"] = function()
         d("  " .. WM.LS("SLASH_POS_WINDOW_NOT_CREATED"))
     end
 end
+
 
 
 

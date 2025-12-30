@@ -5,7 +5,8 @@ An Elder Scrolls Online addon that tracks Mark of Hircine applications from Hunt
 ## Features
 
 - Displays an icon (Mark of Hircine) when Huntsman's Warmask is equipped
-- Shows "Bash something" when ready to track a target
+- Shows "Bash something" when ready to track a target (or "Bash, thou must" in roleplaying mode)
+- Chat notifications when warmask is equipped/unequipped
 - Tracks bash applications with a 60-second countdown
 - Displays tracked target's name during countdown
 - Color-coded status:
@@ -44,11 +45,13 @@ Access via ESO Settings → Add-ons → Warmask. The panel includes:
 - **Countdown** (green, 49s-0s) - Ready to bash a new target. Bashing will update the tracked target.
 
 **Icon Settings:**
-- Lock/unlock icon position for dragging
+- Lock/unlock icon position for dragging (unlocking automatically disables "Hide Icon Out of Combat")
+- Hide icon out of combat option
 - Reset position to center
 - Icon scale (50%-200%)
 - Font scale (50%-400%)
-- Font family selection (Univers67 or ProseAntiquePSMT) with live preview
+- Font family selection (Univers67 or ProseAntiquePSMT)
+- Roleplaying mode (changes "Bash something" to "Bash, thou must")
 
 **Line Settings:**
 - Enable/disable line drawing to marked target
@@ -153,6 +156,9 @@ StartReadyFlash()         -- Start "Bash something" text flash (in combat)
 StopReadyFlash()          -- Stop ready text flash
 StartCountdownFlash()     -- Start countdown flash (below 10s)
 StopCountdownFlash()      -- Stop countdown flash
+WM.Log(message, color)     -- Send formatted chat message (similar to WizardsWardrobe)
+GetBashText()              -- Get bash text based on roleplaying mode setting
+WM.UpdateReadyText()      -- Update ready text when settings change
 
 -- Line.lua
 WM.CreateLineUI()         -- Initialize line rendering controls
@@ -177,6 +183,8 @@ WarMaskSV = {
     iconScale = 100,                  -- Icon scale percentage (50-200)
     fontScale = 100,                   -- Font scale percentage (50-400)
     fontFamily = "Univers67",         -- Font family: "Univers67" or "ProseAntiquePSMT"
+    hideIconOutOfCombat = false,      -- Hide icon when not in combat
+    roleplayingMode = false,          -- Use roleplaying text ("Bash, thou must")
 }
 ```
 
@@ -206,7 +214,7 @@ When enabled in settings, debug mode displays detailed information in chat:
 ## Potential Improvements
 
 - [ ] Add sound alert when countdown reaches 0
-- [ ] Add option to show/hide outside combat
+- [x] Add option to show/hide outside combat (implemented in v1.4.0)
 
 ## Dependencies
 
@@ -224,6 +232,14 @@ When enabled in settings, debug mode displays detailed information in chat:
 101048 (Update 45)
 
 ## Changelog
+
+### v1.4.0
+- Added chat notifications when warmask is equipped/unequipped (formatted like WizardsWardrobe)
+- Added "Hide Icon Out of Combat" setting - icon automatically hides when out of combat and shows when entering combat
+- Added "Roleplaying Mode" setting - changes "Bash something" to "Bash, thou must" for immersive roleplaying
+- Improved lock position behavior - unlocking icon position automatically disables "Hide Icon Out of Combat" so icon can be moved
+- Fixed initialization order issues with text display
+- Updated version to 1.4.0 with proper author attribution
 
 ### v1.3.0
 - Added font family selection (Univers67 or ProseAntiquePSMT)

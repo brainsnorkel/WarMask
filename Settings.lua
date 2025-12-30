@@ -1,5 +1,7 @@
 -- =============================================================================
 -- Warmask Settings Menu (LibAddonMenu-2.0)
+-- Author: @brainsnorkel
+-- Year: 2025
 -- =============================================================================
 
 WarMask = WarMask or {}
@@ -70,6 +72,66 @@ function WM.BuildMenu()
                 if WM.UpdateLockState then
                     WM.UpdateLockState()
                 end
+                -- When unlocking position, disable hideIconOutOfCombat so icon can be moved
+                if not value then
+                    WM.savedVars.hideIconOutOfCombat = false
+                    -- Show the icon if warmask is equipped
+                    local win = WINDOW_MANAGER:GetControlByName(WM.name .. "Window")
+                    if win then
+                        -- Check if warmask is equipped
+                        local isEquipped = false
+                        if WM.IsWarmaskEquipped and type(WM.IsWarmaskEquipped) == "function" then
+                            local success, result = pcall(WM.IsWarmaskEquipped)
+                            if success then
+                                isEquipped = result
+                            end
+                        end
+                        if isEquipped then
+                            win:SetHidden(false)
+                        end
+                    end
+                end
+            end,
+            width = "full",
+        },
+        {
+            type = "checkbox",
+            name = WM.LS and WM.LS("SETTINGS_HIDE_OUT_OF_COMBAT") or "Hide Icon Out of Combat",
+            tooltip = WM.LS and WM.LS("SETTINGS_HIDE_OUT_OF_COMBAT_TOOLTIP") or "When enabled, the icon will be hidden when you are not in combat. The icon will automatically appear when you enter combat.",
+            getFunc = function() return WM.savedVars.hideIconOutOfCombat or false end,
+            setFunc = function(value)
+                WM.savedVars.hideIconOutOfCombat = value
+                -- Immediately update UI visibility based on combat state
+                local win = WINDOW_MANAGER:GetControlByName(WM.name .. "Window")
+                if not win then return end
+                
+                -- Check if warmask is equipped
+                local isEquipped = false
+                if WM.IsWarmaskEquipped and type(WM.IsWarmaskEquipped) == "function" then
+                    local success, result = pcall(WM.IsWarmaskEquipped)
+                    if success then
+                        isEquipped = result
+                    end
+                end
+                
+                if not isEquipped then
+                    -- Warmask not equipped, hide icon
+                    win:SetHidden(true)
+                    return
+                end
+                
+                -- Warmask is equipped, check setting and combat state
+                if value then
+                    -- Setting enabled - hide if out of combat, show if in combat
+                    if IsUnitInCombat("player") then
+                        win:SetHidden(false)
+                    else
+                        win:SetHidden(true)
+                    end
+                else
+                    -- Setting disabled - always show
+                    win:SetHidden(false)
+                end
             end,
             width = "full",
         },
@@ -122,32 +184,30 @@ function WM.BuildMenu()
         },
         {
             type = "dropdown",
-            name = "Font Family",
-            tooltip = "Select the font family to use for the addon text.",
+            name = WM.LS and WM.LS("SETTINGS_FONT_FAMILY") or "Font Family",
+            tooltip = WM.LS and WM.LS("SETTINGS_FONT_FAMILY_TOOLTIP") or "Select the font family to use for the addon text.",
             choices = {"Univers67", "ProseAntiquePSMT"},
             choicesValues = {"Univers67", "ProseAntiquePSMT"},
             getFunc = function() return WM.savedVars.fontFamily or "Univers67" end,
             setFunc = function(value)
                 WM.savedVars.fontFamily = value
                 WM.ApplyUIScaling()
-                -- Refresh font preview
-                zo_callLater(function()
-                    if WM.CreateFontPreview then
-                        WM.CreateFontPreview()
-                    end
-                end, 100)
-                d("[Warmask] Font family set to " .. value)
+                d("[Warmask] " .. (WM.LS and WM.LS("SETTINGS_FONT_FAMILY_SET", value) or ("Font family set to " .. value)))
             end,
             width = "full",
         },
         {
-            type = "description",
-            text = "|cFFFFFFFont Preview:|r",
-            width = "full",
-        },
-        {
-            type = "custom",
-            reference = "WM_FontPreviewContainer",
+            type = "checkbox",
+            name = WM.LS and WM.LS("SETTINGS_ROLEPLAYING_MODE") or "Roleplaying Mode",
+            tooltip = WM.LS and WM.LS("SETTINGS_ROLEPLAYING_MODE_TOOLTIP") or "When enabled, changes 'Bash something' to 'Bash, thou must' for a more immersive roleplaying experience.",
+            getFunc = function() return WM.savedVars.roleplayingMode or false end,
+            setFunc = function(value)
+                WM.savedVars.roleplayingMode = value
+                -- Update the status text immediately if warmask is equipped and in ready state
+                if WM.UpdateReadyText then
+                    WM.UpdateReadyText()
+                end
+            end,
             width = "full",
         },
         
@@ -219,10 +279,7 @@ function WM.BuildMenu()
     
     LAM:RegisterOptionControls(WM.name .. "Menu", options)
     
-    -- Create font preview after menu is built
-    zo_callLater(function()
-        WM.CreateFontPreview()
-    end, 500)
+    
 end
 
 -- =============================================================================
@@ -300,6 +357,92 @@ function WM.CreateFontPreview()
     -- Set container height to fit all previews
     container:SetHeight(125)
 end
+
+-- =============================================================================
+-- WARMASK STATUS DISPLAY
+-- =============================================================================
+function WM.CreateWarmaskStatusDisplay()
+    -- Silently return if function doesn't exist or if there's an error
+    if not WM or not WINDOW_MANAGER then return end
+    
+    -- Use pcall to prevent errors from breaking the settings panel
+    local success, err = pcall(function()
+        -- Find the settings panel
+        local settingsWindow = WINDOW_MANAGER:GetControlByName("LAMAddonSettings")
+        if not settingsWindow then return end
+        
+        -- Search for the custom control in the current panel
+        local container = nil
+        local function SearchChildren(parent, depth)
+            if depth > 15 then return nil end  -- Increased depth limit
+            if not parent then return nil end
+            
+            local numChildren = parent:GetNumChildren()
+            for i = 1, numChildren do
+                local child = parent:GetChild(i)
+                if child then
+                    local name = child:GetName()
+                    if name and (string.find(name, "WarmaskStatus") or string.find(name, "WM_WarmaskStatus")) then
+                        return child
+                    end
+                    local found = SearchChildren(child, depth + 1)
+                    if found then return found end
+                end
+            end
+            return nil
+        end
+        
+        container = SearchChildren(settingsWindow, 0)
+        
+        if not container then 
+            -- Control not found yet, try again later
+            return 
+        end
+        
+        -- Clear any existing content
+        container:RemoveAllChildren()
+        
+        -- Check warmask equipped status safely
+        local isEquipped = false
+        if WM.IsWarmaskEquipped and type(WM.IsWarmaskEquipped) == "function" then
+            local success, result = pcall(WM.IsWarmaskEquipped)
+            if success then
+                isEquipped = result
+            end
+        end
+        
+        -- Create status label
+        local statusLabel = WINDOW_MANAGER:CreateControl(nil, container, CT_LABEL)
+        if not statusLabel then return end
+        
+        statusLabel:SetFont("ZoFontGame")
+        statusLabel:SetAnchor(TOPLEFT, container, TOPLEFT, 10, 5)
+        
+        if isEquipped then
+            statusLabel:SetText("|c00FF00Warmask Status: EQUIPPED|r")
+        else
+            statusLabel:SetText("|cFF4D4DWarmask Status: NOT EQUIPPED|r")
+        end
+        
+        statusLabel:SetColor(1, 1, 1, 1)
+        local containerWidth = container:GetWidth()
+        if containerWidth and containerWidth > 0 then
+            statusLabel:SetDimensions(containerWidth - 20, 25)
+        else
+            statusLabel:SetDimensions(300, 25)
+        end
+        statusLabel:SetHeight(25)
+        
+        -- Set container height
+        container:SetHeight(30)
+    end)
+    
+    -- Don't log errors to avoid spam - just silently fail
+    -- if not success and err then
+    --     d("[Warmask] Error creating warmask status display: " .. tostring(err))
+    -- end
+end
+
 
 
 

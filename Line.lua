@@ -1,6 +1,7 @@
 -- =============================================================================
 -- Warmask Line Rendering
--- =============================================================================
+-- Author: @brainsnorkel
+-- Year: 2025
 -- Adapted from BetterGuard by TheMrPancake
 -- Original line rendering logic from CrutchAlerts by Kyzeragon
 -- and OdySupportIcons by Lamierina7
@@ -178,6 +179,9 @@ function WM.RemoveLine()
         line:SetHidden(true)
     end
 end
+
+
+
 
 
 
