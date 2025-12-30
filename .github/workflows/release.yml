@@ -31,6 +31,9 @@ jobs:
           cp Settings.lua WarMask/
           cp README.md WarMask/
           
+          # Copy lang directory
+          cp -r lang WarMask/
+          
           # Create the zip file
           zip -r WarMask-${{ steps.version.outputs.VERSION }}.zip WarMask
       
@@ -40,6 +43,8 @@ jobs:
           name: WarMask v${{ steps.version.outputs.VERSION }}
           body: |
             ## WarMask v${{ steps.version.outputs.VERSION }}
+            
+            See [README.md](https://github.com/brainsnorkel/WarMask/blob/master/README.md#changelog) for full changelog.
             
             ### Installation
             1. Download `WarMask-${{ steps.version.outputs.VERSION }}.zip`
