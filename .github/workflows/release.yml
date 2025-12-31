@@ -29,7 +29,6 @@ jobs:
           cp WarMask.lua WarMask/
           cp Line.lua WarMask/
           cp Settings.lua WarMask/
-          cp README.md WarMask/
           
           # Copy lang directory
           cp -r lang WarMask/
